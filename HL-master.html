@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<title>Seoultech Broadcast System</title>
+<meta charset="UTF-8">
+	
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.0.0/d3.min.js" charset="utf-8"></script>
+<script src="../../dist/js/epoch.min.js"></script>
+<script src="../../socket.io/socket.io.js"></script>
+<script src="../tp_data2.js"></script>
+<script src="../chatData.js"></script>
+<link rel="stylesheet" href="../../dist/css/epoch.min.css">
+<style>
+body,h1,h2,h3,h4,h5,h6 {font-family: "Raleway", sans-serif}
+body, html {
+    height: 100%;
+    line-height: 1.8;
+}
+.w3-bar .w3-button {
+    padding: 16px;
+}
+video{
+	width:100%;
+	max-width:720px;
+	height: auto;
+		
+	}
+  #msgs{
+		height: 100%;
+		max-height: 100px;
+		overflow-y: scroll;
+	}
+  .btn-group .button {
+    background-color: rgb(153, 155, 179);
+    border: 1px solid rgb(56,56,56);
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    cursor: pointer;
+    width: 250px;
+    display: block;
+}
+
+.btn-group .button:not(:last-child) {
+    border-bottom: none; /* Prevent double borders */
+    width: 300px;
+    max-width: 500px;
+}
+
+.btn-group .button:hover {
+    background-color:  rgb(53, 53, 56);
+}
+</style>
+<body>
+	<script type="text/javascript" src="../tpdata.js"></script>
+<!-- Navbar (sit on top) -->
+<div class="w3-top">
+  <div class="w3-bar w3-white w3-card" id="myNavbar">
+    <a href="../pbp.html" class="w3-bar-item w3-button w3-wide">SEOULTECH Live System</a>
+    <!-- Right-sided navbar links -->
+    <div class="w3-right w3-hide-small">
+        <a href="../about.html" class="w3-bar-item w3-button">ABOUT</a>
+        <a href="../openpose.html" class="w3-bar-item w3-button"> POSE RECOGNITION</a>
+        <a href="../Virtual/index.html" class="w3-bar-item w3-button"> WebVR</a>
+        <a href="../360audio1.html" class="w3-bar-item w3-button"> SPATIAL AUDIO</a>
+        <a href="../chat.html" class="w3-bar-item w3-button"> ANALYSIS</a>
+        <a href="./collabo.html" class="w3-bar-item w3-button"> COLLABO</a>
+        <a href="../contact.html" class="w3-bar-item w3-button"> CONTACT</a>
+      </div>
+    <!-- Hide right-floated links on small screens and replace them with a menu icon -->
+
+    <a href="javascript:void(0)" class="w3-bar-item w3-button w3-right w3-hide-large w3-hide-medium" onclick="w3_open()">
+      <i class="fa fa-bars"></i>
+    </a>
+  </div>
+</div>
+
+<!-- Sidebar on small screens when clicking the menu icon -->
+<nav class="w3-sidebar w3-bar-block w3-black w3-card w3-animate-left w3-hide-medium w3-hide-large" style="display:none" id="mySidebar">
+    <a href="javascript:void(0)" onclick="w3_close()" class="w3-bar-item w3-button w3-large w3-padding-16">Close ×</a>
+    <a href="../about.html" onclick="w3_close()" class="w3-bar-item w3-button">ABOUT</a>
+    <a href="../openpose.html" onclick="w3_close()" class="w3-bar-item w3-button">POSE RECOGNITION</a>
+    <a href="../Virtual/index.html" onclick="w3_close()" class="w3-bar-item w3-button"> WebVR</a>
+    <a href="../chat.html" onclick="w3_close()" class="w3-bar-item w3-button">ANALYSIS</a>
+    <a href="./collabo.html" onclick="w3_close()" class="w3-bar-item w3-button"> COLLABO</a>
+    <a href="../contact.html" onclick="w3_close()" class="w3-bar-item w3-button">CONTACT</a>
+  </nav>
+
+<div class="w3-container w3-light-grey" style="padding:128px 16px" id="contact">
+  <h3 class="w3-center">방송관리시스템 [Master] - Analysis</h3>
+  <p class="w3-center w3-large">빅데이터를 활용한 채팅 하이라이트 분석</p>
+  <div class="w3-center">
+      <button class="button button2" id="joint" style="width:116px">Join</button>
+  </div>
+  <div class="w3-row-padding" style="margin-top:64px">
+    
+    <div class="w3-half">
+     <video playsinline width="720" height="500" controls autoplay preload="metadata">
+
+      <source src="../HL_CUT.mp4" type="video/mp4" autoplay;/>
+     </video> 
+    </div>
+    <div class="w3-half">
+        <div class="w3-half">
+            <b>
+                Send message
+            </b>
+            <div id="msgs">
+            </div>
+            <p id="message_box">
+                <span></span>
+                <br/>
+                    <input type="text" id="msgbox"/>
+                <button id="enter" class="w3-button w3-blue-gray" style="padding-top:4.5px; padding-bottom: 4px;">
+                    입력
+                </button>
+            </p>
+        </div>
+        <div class="w3-half">
+            <h3>Channel List</h3>
+            <div class="btn-group">
+                <button class="button" id="se1">POSE RECOGNITION</button>
+                <button class="button" id="se2">SPATIAL AUDIO</button>
+                <button class="button" id="se3" style="width: 300px;">ANALYSIS</button>
+            </div> 
+        </div>
+    </div>
+      
+       
+    </div>
+    <script type="text/javascript">
+      var input_nickname = "master-analysis";
+      var socket = io.connect();
+      $("#msgbox").keyup(function(event) {
+          if (event.which == 13) {
+              socket.emit('session2',{msg:input_nickname+":"+$('#msgbox').val()});
+              $("#msgs").scrollTop($("#msgs")[0].scrollHeight);
+              $('#msgbox').val('');
+          }
+      });
+      $("#enter").click(function(){
+          socket.emit('session2',{msg:input_nickname+":"+$('#msgbox').val()});
+          console.log(input_nickname+":"+$('#msgbox').val());
+          $("#msgs").scrollTop($("#msgs")[0].scrollHeight);
+          $('#msgbox').val('');
+      });
+      socket.on('session2',function(data){
+          console.log(data.msg);
+          $('#msgs').append(data.msg+'<BR>');
+      });
+  </script>
+  <div id="id01" class="w3-modal">
+      <div class="w3-modal-content" style="width:600px">
+      
+        <div class="w3-container" style="">
+          <span onclick="document.getElementById('id01').style.display='block'" 
+          class="w3-button w3-display-topright">&times;</span>
+        <center>
+        <p style="margin-bottom: 0px;">닉네임을 입력하세요</p>
+          <input id="nick_name" type ="text" style=black/>
+        <button id="nick_name_button" class="w3-button w3-blue-gray" style="padding-top: 4px; padding-bottom: 4px; padding-right: 3px; padding-left: 3px;">확인</button>
+        </center>
+          
+        </div>
+      </div>
+    </div>	  
+   
+
+      <div id="lineChart" style="width: 100%; height: 200px; font-size: 10pt; margin: auto"></div>
+      <script>
+        
+        var TP = $('#lineChart').epoch({
+        type: 'time.area',
+        data: areaChartData
+        });
+        var count = 0
+        var chatCount = 0
+        dataLength = data.length;
+        //console.dir(data);
+        setInterval(function()
+        { 
+          if(count<=dataLength){
+            console.log(data[count]);
+            TP.push(data[count]);
+            count++;
+          }
+          /*
+          var times = (new Date()).getTime();
+          console.log(times)
+          TP.push([{time: times / 1000, y: Math.floor(Math.random() * 1000)}]);
+          */
+        },1000);
+        var appendedIndex =0;
+        
+        setInterval(function()
+        { 
+          if(chatCount<=Object.keys(chatData).length){
+            while(chatData[chatCount+appendedIndex][0].chattime===chatCount){
+              $("#msgs").append(chatData[chatCount+appendedIndex][0].user+": "+chatData[chatCount+appendedIndex][0].comment+"<br/>")
+              console.log(chatData[chatCount+appendedIndex][0])
+              appendedIndex++;
+            }
+            chatCount++;
+            $("#msgs").scrollTop($("#msgs")[0].scrollHeight+20);
+          }
+        },1000);
+        </script>
+    </div>
+  </div>
+</div>
+	
+<footer class="w3-center w3-black w3-padding-64">
+  <a href="../chat.html" class="w3-button w3-light-grey"><i class="fa fa-arrow-up w3-margin-right"></i>To the top</a>
+</footer>
+	
+<script>
+var socket = io();
+
+
+socket.on("getResponse", function(room, isGrant) {
+    if(isGrant) {
+        socket.emit("enter", room, socket.id);
+        location.href = "/c";
+    } else {
+        // TODO 거절 했을때 다른 클라이언트 side
+    }
+});
+
+$(document).ready(function(){
+    $("#joint").click(function(e){
+        e.preventDefault();
+        // Create a random room if not already present in the URL.
+        var isInitiator;
+        var room = window.location.hash.substring(1);
+        if (!room) {
+            room = window.location.hash = randomToken();
+        }
+        socket.emit("request", room);
+    });
+
+});
+
+function randomToken() {
+    return Math.floor((1 + Math.random()) * 1e16).toString(16).substring(1);
+}
+
+</script>
+
+<script>
+
+// Modal Image Gallery
+function onClick(element) {
+  document.getElementById("img01").src = element.src;
+  document.getElementById("modal01").style.display = "block";
+  var captionText = document.getElementById("caption");
+  captionText.innerHTML = element.alt;
+}
+
+
+// Toggle between showing and hiding the sidebar when clicking the menu icon
+var mySidebar = document.getElementById("mySidebar");
+
+function w3_open() {
+    if (mySidebar.style.display === 'block') {
+        mySidebar.style.display = 'none';
+    } else {
+        mySidebar.style.display = 'block';
+    }
+}
+
+// Close the sidebar with the close button
+function w3_close() {
+    mySidebar.style.display = "none";
+}
+</script>
+<!--
+To use this code on your website, get a free API key from Google.
+Read more at: https://www.w3schools.com/graphics/google_maps_basic.asp
+-->
+
+</body>
+</html>

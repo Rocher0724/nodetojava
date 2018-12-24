@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html>
+<title>Seoultech Broadcast System</title>
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<!--<link rel="stylesheet" type="text/css" href="../../valiant360/css/valiant360.css"/>-->
+<script src="../../socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<!--<script src="../chatData.js"></script>-->
+<!--<script type="text/javascript" src="../../valiant360/js/three.min.js"></script>-->
+<!--<script type="text/javascript" src="../../valiant360/jquery.valiant360.js"></script>-->
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<style>
+    body, h1, h2, h3, h4, h5, h6 {
+        font-family: "Raleway", sans-serif
+    }
+
+    body, html {
+        height: 100%;
+        line-height: 1.8;
+    }
+
+    .w3-bar .w3-button {
+        padding: 16px;
+    }
+
+    video {
+        width: 100%;
+        max-width: 720px;
+        height: auto;
+
+    }
+
+    #msgs {
+        height: 100%;
+        max-height: 100px;
+        overflow-y: scroll;
+    }
+</style>
+<body>
+<!-- Navbar (sit on top) -->
+<div class="w3-top">
+    <div class="w3-bar w3-white w3-card" id="myNavbar">
+        <a href="../pbp.html" class="w3-bar-item w3-button w3-wide">SEOULTECH Live System</a>
+        <!-- Right-sided navbar links -->
+        <div class="w3-right w3-hide-small">
+            <a href="../about.html" class="w3-bar-item w3-button">ABOUT</a>
+            <a href="../openpose.html" class="w3-bar-item w3-button"> POSE RECOGNITION</a>
+            <a href=".././Virtual/index.html" class="w3-bar-item w3-button"> WebVR</a>
+            <a href="../audio2.html" class="w3-bar-item w3-button"> SPATIAL AUDIO</a>
+            <a href="../chat.html" class="w3-bar-item w3-button"> ANALYSIS</a>
+            <a href=".././collabo/collabo.html" class="w3-bar-item w3-button"> COLLABO</a>
+            <a href="../contact.html" class="w3-bar-item w3-button"> CONTACT</a>
+        </div>
+        <!-- Hide right-floated links on small screens and replace them with a menu icon -->
+
+        <a href="javascript:void(0)" class="w3-bar-item w3-button w3-right w3-hide-large w3-hide-medium"
+           onclick="w3_open()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </div>
+</div>
+
+<!-- Sidebar on small screens when clicking the menu icon -->
+<nav class="w3-sidebar w3-bar-block w3-black w3-card w3-animate-left w3-hide-medium w3-hide-large" style="display:none"
+     id="mySidebar">
+    <a href="javascript:void(0)" onclick="w3_close()" class="w3-bar-item w3-button w3-large w3-padding-16">Close ×</a>
+    <a href="../about.html" onclick="w3_close()" class="w3-bar-item w3-button">ABOUT</a>
+    <a href="../openpose.html" onclick="w3_close()" class="w3-bar-item w3-button">POSE RECOGNITION</a>
+    <a href=".././Virtual/index.html" onclick="w3_close()" class="w3-bar-item w3-button"> WebVR</a>
+    <a href="../audio2.html" onclick="w3_close()" class="w3-bar-item w3-button">SPATIAL AUDIO</a>
+    <a href="../chat.html" onclick="w3_close()" class="w3-bar-item w3-button">ANALYSIS</a>
+    <a href=".././collabo/collabo.html" onclick="w3_close()" class="w3-bar-item w3-button"> COLLABO</a>
+    <a href="../contact.html" onclick="w3_close()" class="w3-bar-item w3-button">CONTACT</a>
+</nav>
+
+<div class="w3-container w3-light-grey" style="padding:128px 16px" id="contact">
+    <h3 class="w3-center">합동방송</h3>
+    <p class="w3-center w3-large">[Analysis + Spatial Audio]</p>
+    <div class="w3-row-padding" style="margin-top:64px">
+
+        <div class="w3-half">
+            <video playsinline id="left_video" width="672" height="377" controls preload="metadata" autoplay></video>
+            <video playsinline id="left_cam" controls preload="metadata" autoplay ></video>
+        </div>
+
+        <div class="w3-half">
+            <video playsinline id="right_video" width="672" height="377" controls preload="metadata" autoplay ></video>
+            <video playsinline id="right_cam" controls preload="metadata" autoplay ></video>
+            <!--style="width: 100%; max-width:720px; height:377px;">-->
+
+        </div>
+
+        <div class="w3-row">
+            <b>
+                Send message
+            </b>
+            <div id="msgs">
+            </div>
+            <p id="message_box">
+                <span></span>
+                <br/>
+                <input type="text" id="msgbox"/>
+                <button id="enter" class="w3-button w3-blue-gray" style="padding-top:4.5px; padding-bottom: 4px;">
+                    입력
+                </button>
+            </p>
+        </div>
+        <script type="text/javascript">
+            var input_nickname = "";
+            var socket = io();
+
+            var isInitiator;
+            var configuration = null;
+            var right_video = document.getElementById('right_video');
+            var right_cam = document.getElementById('right_cam');
+            var left_video = document.getElementById('left_video');
+            var left_cam = document.getElementById('left_cam');
+
+            var peerConn;
+            var dataChannel;
+            let localStream;
+
+            left_cam.addEventListener("loadedmetadata", function () {
+                photoContextW = left_cam.videoWidth;
+                photoContextH = left_cam.videoHeight;
+                console.log('gotStream with width and height:', left_cam.videoWidth, left_cam.videoHeight);
+            });
+
+            right_cam.addEventListener("loadedmetadata", function () {
+                photoContextW = right_cam.videoWidth;
+                photoContextH = right_cam.videoHeight;
+                console.log('call: gotStream with width and height:', right_cam.videoWidth, right_cam.videoHeight);
+            });
+
+            right_cam.addEventListener('resize', () => {
+                console.log(`Remote video size changed to ${right_cam.videoWidth}x${right_cam.videoHeight}`);
+            });
+
+            var photoContextW;
+            var photoContextH;
+
+            let startTime;
+
+            $("#message_box span").text(input_nickname);
+            $("#msgbox").keyup(function (event) {
+                if (event.which == 13) {
+                    socket.emit('session2', {msg: input_nickname + ":" + $('#msgbox').val()});
+                    $("#msgs").scrollTop($("#msgs")[0].scrollHeight);
+                    $('#msgbox').val('');
+                }
+            });
+            $("#enter").click(function () {
+                socket.emit('session2', {msg: input_nickname + ":" + $('#msgbox').val()});
+                console.log(input_nickname + ":" + $('#msgbox').val());
+                $("#msgs").scrollTop($("#msgs")[0].scrollHeight);
+                $('#msgbox').val('');
+            });
+
+            socket.on('ipaddr', function(ipaddr) {
+                console.log('Server IP address is: ' + ipaddr);
+                // updateRoomURL(ipaddr);
+            });
+
+            socket.on('created', function(room, clientId) {
+                console.log('Created room', room, '- my client ID is', clientId);
+                isInitiator = true;
+                grabWebCamVideo();
+            });
+
+            socket.on('joined', function(room, clientId) {
+                console.log('This peer has joined room', room, 'with client ID', clientId);
+                isInitiator = true;
+                createPeerConnection(isInitiator, configuration);
+                grabWebCamVideo();
+            });
+
+            socket.on('ready', function() {
+                console.log('Socket is ready');
+                createPeerConnection(isInitiator, configuration);
+            });
+
+            socket.on('log', function(array) {
+                console.log.apply(console, array);
+            });
+
+            socket.on('message', function(message) {
+                console.log('Client received message:', message);
+                signalingMessageCallback(message);
+            });
+
+            // Leaving rooms and disconnecting from peers.
+            socket.on('disconnect', function(reason) {
+                console.log(`Disconnected: ${reason}.`);
+            });
+
+            socket.on('bye', function(room) {
+                console.log(`Peer leaving room ${room}.`);
+                // If peer did not create the room, re-enter to be creator.
+                if (!isInitiator) {
+                    window.location.reload();
+                }
+            });
+            socket.on('connect', function () {
+                socket.emit("onCollabo");
+            });
+            socket.on('collabo', function (room) {
+                socket.emit('create or join', room);
+                console.log(room);
+            });
+            /**
+             * Send message to signaling server
+             */
+            function sendMessage(message) {
+                console.log('Client sending message: ', message);
+                socket.emit('message', message);
+            }
+
+            /**
+             * Updates URL on the page so that users can copy&paste it to their peers.
+             */
+            // function updateRoomURL(ipaddr) {
+            //   var url;
+            //   if (!ipaddr) {
+            //     url = location.href;
+            //   } else {
+            //     url = location.protocol + '//' + ipaddr + ':2013/#' + room;
+            //   }
+            //   roomURL.innerHTML = url;
+            // }
+
+            /****************************************************************************
+             * User media (webcam)
+             ****************************************************************************/
+
+            async function grabWebCamVideo() {
+                console.log('Getting user media (video) ...');
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: true
+                })
+                    .then(gotStream);
+                // .catch(function(e) {
+                //     alert('getUserMedia() error: ' + e.name);
+                // });
+            }
+
+            function gotStream(stream) {
+                console.log('getUserMedia video stream URL:', stream);
+                window.stream = stream; // stream available to console
+                left_cam.srcObject = stream;
+                localStream = stream;
+            }
+
+            /****************************************************************************
+             * WebRTC peer connection and data channel
+             ****************************************************************************/
+
+            function signalingMessageCallback(message) {
+                if (message.type === 'offer') {
+                    console.log('Got offer. Sending answer to peer.');
+                    peerConn.setRemoteDescription(new RTCSessionDescription(message), function () {
+                        },
+                        logError);
+                    peerConn.createAnswer(onLocalSessionCreated, logError);
+
+                } else if (message.type === 'answer') {
+                    console.log('Got answer.');
+                    peerConn.setRemoteDescription(new RTCSessionDescription(message), function () {
+                        },
+                        logError);
+
+                } else if (message.type === 'candidate') {
+                    // peerConn.addIceCandidate(new RTCIceCandidate({
+                    //     candidate: message.candidate
+                    // }));
+
+                }
+            }
+
+            function createPeerConnection(isInitiator, config) {
+                console.log('Creating Peer connection as initiator?', isInitiator, 'config:',
+                    config);
+                peerConn = new RTCPeerConnection(config);
+
+// send any ice candidates to the other peer
+                peerConn.onicecandidate = function (event) {
+                    console.log('icecandidate event:', event);
+                    if (event.candidate) {
+                        sendMessage({
+                            type: 'candidate',
+                            label: event.candidate.sdpMLineIndex,
+                            id: event.candidate.sdpMid,
+                            candidate: event.candidate.candidate
+                        });
+                    } else {
+                        console.log('End of candidates.');
+                    }
+                };
+                peerConn.addEventListener('icecandidate', e => onIceCandidate(peerConn, e));
+                peerConn.addEventListener('track', function(e) {
+                    if (right_cam.srcObject !== e.streams[0]) {
+                        right_cam.srcObject = e.stream[0];
+                        console.log("received remote stream!");
+                    }
+                });
+
+                // if (isInitiator) {
+                //     console.log('Creating Data Channel');
+                //     dataChannel = peerConn.createDataChannel('cam');
+                //     onDataChannelCreated(dataChannel);
+                //
+                //     console.log('Creating an offer');
+                //     peerConn.createOffer(onLocalSessionCreated, logError);
+                // } else {
+                //     peerConn.ondatachannel = function (event) {
+                //         console.log('ondatachannel:', event.channel);
+                //         dataChannel = event.channel;
+                //         onDataChannelCreated(dataChannel);
+                //     };
+                // }
+            }
+
+            async function onIceCandidate(pc, event) {
+                try {
+                    await (getOtherPc(pc).addIceCandidate(event.candidate));
+                    // onAddIceCandidateSuccess(pc);
+                } catch (e) {
+                    // onAddIceCandidateError(pc, e);
+                }
+                // console.log(`${getName(pc)} ICE candidate:\n${event.candidate ? event.candidate.candidate : '(null)'}`);
+            }
+
+            function onLocalSessionCreated(desc) {
+                console.log('local session created:', desc);
+                peerConn.setLocalDescription(desc, function () {
+                    console.log('sending local desc:', peerConn.localDescription);
+                    sendMessage(peerConn.localDescription);
+                }, logError);
+            }
+
+            function onDataChannelCreated(channel) {
+                console.log('onDataChannelCreated:', channel);
+
+                channel.onopen = function () {
+                    console.log('CHANNEL opened!!!');
+                    // sendBtn.disabled = false;
+                    // snapAndSendBtn.disabled = false;
+                    peerConn.addEventListener('track', function(e) {
+                        if (right_cam.srcObject !== e.streams[0]) {
+                            right_cam.srcObject = e.stream[0];
+                            console.log("received remote stream!");
+                        }
+                    });
+                };
+
+                channel.onclose = function () {
+                    console.log('Channel closed.');
+                    // sendBtn.disabled = true;
+                    // snapAndSendBtn.disabled = true;
+                };
+
+                channel.onmessage = (adapter.browserDetails.browser === 'firefox') ?
+                    receiveDataFirefoxFactory() : receiveDataChromeFactory();
+            }
+
+            function receiveDataChromeFactory() {
+                var buf, count;
+
+                return function onmessage(event) {
+                    if (typeof event.data === 'string') {
+                        buf = window.buf = new Uint8ClampedArray(parseInt(event.data));
+                        count = 0;
+                        console.log('Expecting a total of ' + buf.byteLength + ' bytes');
+                        return;
+                    }
+
+                    var data = new Uint8ClampedArray(event.data);
+                    buf.set(data, count);
+
+                    count += data.byteLength;
+                    console.log('count: ' + count);
+
+                    if (count === buf.byteLength) {
+// we're done: all data chunks have been received
+                        console.log('Done. Rendering photo.');
+                        renderPhoto(buf);
+                    }
+                };
+            }
+
+            function receiveDataFirefoxFactory() {
+                var count, total, parts;
+
+                return function onmessage(event) {
+                    if (typeof event.data === 'string') {
+                        total = parseInt(event.data);
+                        parts = [];
+                        count = 0;
+                        console.log('Expecting a total of ' + total + ' bytes');
+                        return;
+                    }
+
+                    parts.push(event.data);
+                    count += event.data.size;
+                    console.log('Got ' + event.data.size + ' byte(s), ' + (total - count) +
+                        ' to go.');
+
+                    if (count === total) {
+                        console.log('Assembling payload');
+                        var buf = new Uint8ClampedArray(total);
+                        var compose = function (i, pos) {
+                            var reader = new FileReader();
+                            reader.onload = function () {
+                                buf.set(new Uint8ClampedArray(this.result), pos);
+                                if (i + 1 === parts.length) {
+                                    console.log('Done. Rendering photo.');
+                                    renderPhoto(buf);
+                                } else {
+                                    compose(i + 1, pos + this.result.byteLength);
+                                }
+                            };
+                            reader.readAsArrayBuffer(parts[i]);
+                        };
+                        compose(0, 0);
+                    }
+                };
+            }
+
+
+            /****************************************************************************
+             * Aux functions, mostly UI-related
+             ****************************************************************************/
+
+            function snapPhoto() {
+                photoContext.drawImage(video, 0, 0, photo.width, photo.height);
+                show(photo, sendBtn);
+            }
+
+            function sendPhoto() {
+// Split data channel message in chunks of this byte length.
+                var CHUNK_LEN = 64000;
+                console.log('width and height ', photoContextW, photoContextH);
+                var img = photoContext.getImageData(0, 0, photoContextW, photoContextH),
+                    len = img.data.byteLength,
+                    n = len / CHUNK_LEN | 0;
+
+                console.log('Sending a total of ' + len + ' byte(s)');
+
+                if (!dataChannel) {
+                    logError('Connection has not been initiated. ' +
+                        'Get two peers in the same room first');
+                    return;
+                } else if (dataChannel.readyState === 'closed') {
+                    logError('Connection was lost. Peer closed the connection.');
+                    return;
+                }
+
+                dataChannel.send(len);
+
+// split the photo and send in chunks of about 64KB
+                for (var i = 0; i < n; i++) {
+                    var start = i * CHUNK_LEN,
+                        end = (i + 1) * CHUNK_LEN;
+                    console.log(start + ' - ' + (end - 1));
+                    dataChannel.send(img.data.subarray(start, end));
+                }
+
+// send the reminder, if any
+                if (len % CHUNK_LEN) {
+                    console.log('last ' + len % CHUNK_LEN + ' byte(s)');
+                    dataChannel.send(img.data.subarray(n * CHUNK_LEN));
+                }
+            }
+
+            async function sendCam() {
+                console.log("Starting call");
+
+                peerConn.addEventListener('track', function(e) {
+                    if (right_cam.srcObject !== e.streams[0]) {
+                        right_cam.srcObject = e.stream[0];
+                        console.log("received remote stream!");
+                    }
+                });
+            }
+
+            function snapAndSend() {
+                snapPhoto();
+                sendPhoto();
+            }
+
+            function renderPhoto(data) {
+                var canvas = document.createElement('canvas');
+                canvas.width = photoContextW;
+                canvas.height = photoContextH;
+                canvas.classList.add('incomingPhoto');
+                // trail is the element holding the incoming images
+                trail.insertBefore(canvas, trail.firstChild);
+
+                var context = canvas.getContext('2d');
+                var img = context.createImageData(photoContextW, photoContextH);
+                img.data.set(data);
+                context.putImageData(img, 0, 0);
+            }
+
+            function show() {
+                Array.prototype.forEach.call(arguments, function (elem) {
+                    elem.style.display = null;
+                });
+            }
+
+            function hide() {
+                Array.prototype.forEach.call(arguments, function (elem) {
+                    elem.style.display = 'none';
+                });
+            }
+
+            function randomToken() {
+                return Math.floor((1 + Math.random()) * 1e16).toString(16).substring(1);
+            }
+
+            function logError(err) {
+                if (!err) return;
+                if (typeof err === 'string') {
+                    console.warn(err);
+                } else {
+                    console.warn(err.toString(), err);
+                }
+            }
+
+        </script>
+        <div id="id01" class="w3-modal">
+            <div class="w3-modal-content" style="width:600px">
+
+                <div class="w3-container" style="">
+          <span onclick="document.getElementById('id01').style.display='block'"
+                class="w3-button w3-display-topright">&times;</span>
+                    <center>
+                        <p style="margin-bottom: 0px;">닉네임을 입력하세요</p>
+                        <input id="nick_name" type="text" style=black/>
+                        <button id="nick_name_button" class="w3-button w3-blue-gray" style="padding-top: 4px;
+        padding-bottom: 4px; padding-right: 3px; padding-left: 3px;">확인
+                        </button>
+                    </center>
+                </div>
+            </div>
+        </div>
+
+
+        <script>
+            var chatCount = 0
+            var appendedIndex = 0;
+            // setInterval(function () {
+            //     if (chatCount <= Object.keys(chatData).length) {
+            //         while (chatData[chatCount + appendedIndex][0].chattime === chatCount) {
+            //             $("#msgs").append(chatData[chatCount + appendedIndex][0].user + ": " + chatData[chatCount + appendedIndex][0].comment + "<br/>")
+            //             console.log(chatData[chatCount + appendedIndex][0])
+            //             appendedIndex++;
+            //         }
+            //         chatCount++;
+            //         $("#msgs").scrollTop($("#msgs")[0].scrollHeight + 20);
+            //     }
+            // }, 1000);
+
+            // width height..?
+            // $(document).ready(function () {
+            //     $('.valiantPhoto').Valiant360();
+            //     $(window).resize(function () {
+            //         $("#right_video").height($("#left_video").height());
+            //         $("#right_video canvas").height($("#left_video").height());
+            //     })
+            //     setTimeout(function () {
+            //         $("#right_video").height($("#left_video").height());
+            //         $("#right_video canvas").height($("#left_video").height());
+            //     }, 300)
+            // });
+        </script>
+    </div>
+</div>
+</div>
+
+<footer class="w3-center w3-black w3-padding-64">
+    <a href="chat.html" class="w3-button w3-light-grey"><i class="fa fa-arrow-up w3-margin-right"></i>To the top</a>
+</footer>
+
+
+<script>
+
+    // Modal Image Gallery
+    function onClick(element) {
+        document.getElementById("img01").src = element.src;
+        document.getElementById("modal01").style.display = "block";
+        var captionText = document.getElementById("caption");
+        captionText.innerHTML = element.alt;
+    }
+
+
+    // Toggle between showing and hiding the sidebar when clicking the menu icon
+    var mySidebar = document.getElementById("mySidebar");
+
+    function w3_open() {
+        if (mySidebar.style.display === 'block') {
+            mySidebar.style.display = 'none';
+        } else {
+            mySidebar.style.display = 'block';
+        }
+    }
+
+    // Close the sidebar with the close button
+    function w3_close() {
+        mySidebar.style.display = "none";
+    }
+</script>
+<!--
+To use this code on your website, get a free API key from Google.
+Read more at: https://www.w3schools.com/graphics/google_maps_basic.asp
+-->
+
+</body>
+</html>

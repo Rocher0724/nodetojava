@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<title>Seoultech Broadcast System</title>
+<meta charset="UTF-8">
+	
+<script
+        src="https://code.jquery.com/jquery-3.2.1.min.js"
+        src="//code.jquery.com/jquery-1.12.4.js"
+        integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+        crossorigin="anonymous">
+    </script>
+<script src="../../socket.io/socket.io.js"></script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"/>
+<link rel="stylesheet" type="text/css" href="../../valiant360/css/valiant360.css" />
+<script type="text/javascript" src="../../valiant360/js/three.min.js"></script>
+<script type="text/javascript" src="../../valiant360/jquery.valiant360.js"></script>
+<style>
+body,h1,h2,h3,h4,h5,h6 {font-family: "Raleway", sans-serif}
+body, html {
+    height: 100%;
+    line-height: 1.8;
+}
+.w3-bar .w3-button {
+    padding: 16px;
+}
+	video{
+		width:100%;
+		max-width:720px;
+		height: auto;
+	}
+
+	#msgs{
+		height: 100%;
+		max-height: 360px;
+		overflow-y: scroll;
+	}
+    .btn-group .button {
+    background-color: rgb(153, 155, 179);
+    border: 1px solid rgb(56,56,56);
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    cursor: pointer;
+    width: 250px;
+    display: block;
+}
+
+.btn-group .button:not(:last-child) {
+    border-bottom: none; /* Prevent double borders */
+    width: 300px;
+    max-width: 500px;
+}
+
+.btn-group .button:hover {
+    background-color:  rgb(53, 53, 56);
+}
+#right-side {
+    margin-left:30px;
+
+}
+</style>
+<body>
+
+<!-- Navbar (sit on top) -->
+<div class="w3-top">
+  <div class="w3-bar w3-white w3-card" id="myNavbar">
+    <a href="../pbp.html" class="w3-bar-item w3-button w3-wide">SEOULTECH Live System</a>
+    <!-- Right-sided navbar links -->
+    <div class="w3-right w3-hide-small">
+        <a href="../about.html" class="w3-bar-item w3-button">ABOUT</a>
+        <a href="../openpose.html" class="w3-bar-item w3-button"> POSE RECOGNITION</a>
+        <a href="../Virtual/index.html" class="w3-bar-item w3-button"> WebVR</a>
+        <a href="../audio2.html" class="w3-bar-item w3-button"> SPATIAL AUDIO</a>
+        <a href="../chat.html" class="w3-bar-item w3-button"> ANALYSIS</a>
+        <a href="./collabo.html" class="w3-bar-item w3-button"> COLLABO</a>
+        <a href="../contact.html" class="w3-bar-item w3-button"> CONTACT</a>
+      </div>
+    <!-- Hide right-floated links on small screens and replace them with a menu icon -->
+
+    <a href="javascript:void(0)" class="w3-bar-item w3-button w3-right w3-hide-large w3-hide-medium" onclick="w3_open()">
+      <i class="fa fa-bars"></i>
+    </a>
+  </div>
+</div>
+
+<!-- Sidebar on small screens when clicking the menu icon -->
+<nav class="w3-sidebar w3-bar-block w3-black w3-card w3-animate-left w3-hide-medium w3-hide-large" style="display:none" id="mySidebar">
+    <a href="javascript:void(0)" onclick="w3_close()" class="w3-bar-item w3-button w3-large w3-padding-16">Close ×</a>
+    <a href="../about.html" onclick="w3_close()" class="w3-bar-item w3-button">ABOUT</a>
+    <a href="../openpose.html" onclick="w3_close()" class="w3-bar-item w3-button">POSE RECOGNITION</a>
+    <a href="../Virtual/index.html" onclick="w3_close()" class="w3-bar-item w3-button"> WebVR</a>
+    <a href="../chat.html" onclick="w3_close()" class="w3-bar-item w3-button">ANALYSIS</a>
+    <a href="./collabo.html" onclick="w3_close()" class="w3-bar-item w3-button"> COLLABO</a>
+    <a href="../contact.html" onclick="w3_close()" class="w3-bar-item w3-button">CONTACT</a>
+  </nav>
+
+<div class="w3-container w3-light-grey" style="padding:128px 16px" id="contact">
+  <h3 class="w3-center">방송관리시스템 [Master] - Spatial Audio </h3>
+  <p class="w3-center w3-large">영상의 변화에 따른 음향 Data의 연동 기법 연구 및 구현</p>
+  <div class="w3-row-padding" style="margin-top:64px">
+	  
+    <div class="w3-half">
+        <div class="valiantPhoto" data-video-src="../181107_360VR_LOL3_small.mp4" style="width:720px; height: 480px">
+        </div>
+       </div>
+         
+       <div id="right-panel" class="w3-half">
+           <div class="w3-half">
+             <div id="right-side">
+               <b>
+                   Send message
+               </b>
+               <div id="msgs">
+               </div>
+               <p id="message_box">
+                   <span></span>
+                   <br/>
+                       <input type="text" id="msgbox"/>
+                   <button id="enter" class="w3-button w3-blue-gray" style="padding-top:4.5px; padding-bottom: 4px;">
+                       입력
+                   </button>
+               </p>
+           </div>
+           </div>
+           <div class="w3-half">
+            <h3>Channel List</h3>
+            <div class="btn-group">
+                <button class="button" id="se1">POSE RECOGNITION</button>
+                <button class="button" id="se2">SPATIAL AUDIO</button>
+                <button class="button" id="se3" style="width: 300px;">ANALYSIS</button>
+            </div> 
+            </div>
+    </div>   
+    
+ <script type="text/javascript">
+        var input_nickname = "master-audio";
+        var socket = io();
+
+        $("#msgbox").keyup(function(event) {
+            if (event.which == 13) {
+                socket.emit('session2',{msg:input_nickname+":"+$('#msgbox').val()});
+                $("#msgs").scrollTop($("#msgs")[0].scrollHeight);
+                $('#msgbox').val('');
+            }
+        });
+        $("#enter").click(function(){
+            socket.emit('session2',{msg:input_nickname+":"+$('#msgbox').val()});
+            console.log(input_nickname+":"+$('#msgbox').val());
+            $("#msgs").scrollTop($("#msgs")[0].scrollHeight);
+            $('#msgbox').val('');
+        });
+        socket.on('session2',function(data){
+            console.log(data.msg);
+            $('#msgs').append(data.msg+'<BR>');
+        });
+
+        socket.on("getRequest", function(room) {
+            if(confirm("합동 방송 요청이 들어왔습니다. 수락 하시겠습니다?")) {
+                socket.emit("response", room, true);
+                socket.emit("enter", room, socket.id);
+                location.href = "/c";
+            }
+            else {
+                //TODO 거절 했을 때 클라이언트 side
+            }
+        });
+    </script>
+	  
+    </div>
+  </div>
+  <script>
+  $("#se3").click(function(){
+              window.open('HL-master.html');
+          });
+      
+      </script>
+<!-- Trigger/Open the Modal -->
+<button onclick="document.getElementById('id01').style.display='none'"
+class="w3-button">NICKNAME</button>
+
+<!-- The Modal -->
+<div id="id01" class="w3-modal">
+  <div class="w3-modal-content" style="width:600px">
+	
+    <div class="w3-container" style="">
+      <span onclick="document.getElementById('id01').style.display='block'" 
+      class="w3-button w3-display-topright">&times;</span>
+		<center>
+		<p style="margin-bottom: 0px;">닉네임을 입력하세요</p>
+      <input id="nick_name" type ="text" style=black/>
+		<button id="nick_name_button" class="w3-button w3-blue-gray" style="padding-top: 4px;
+    padding-bottom: 4px; padding-right: 3px; padding-left: 3px;">확인</button>
+		</center>
+      
+    </div>
+  </div>
+</div>
+<footer class="w3-center w3-black w3-padding-64">
+  <a href="client2.html" class="w3-button w3-light-grey"><i class="fa fa-arrow-up w3-margin-right"></i>To the top</a>
+</footer>
+	
+
+<script>
+
+$(document).ready(function(){
+    $('.valiantPhoto').Valiant360();
+    $('.valiantPhoto').width(($(window).width()-32)/2);
+    $('.valiantPhoto').height((($(window).width()-32)/2)*0.69);
+    $( window ).resize(function(){
+        $('.valiantPhoto').width(($(window).width()-32)/2);
+        $('.valiantPhoto').height((($(window).width()-32)/2)*0.69);
+    });
+});
+
+// Modal Image Gallery
+function onClick(element) {
+  document.getElementById("img01").src = element.src;
+  document.getElementById("modal01").style.display = "block";
+  var captionText = document.getElementById("caption");
+  captionText.innerHTML = element.alt;
+}
+
+
+// Toggle between showing and hiding the sidebar when clicking the menu icon
+var mySidebar = document.getElementById("mySidebar");
+
+function w3_open() {
+    if (mySidebar.style.display === 'block') {
+        mySidebar.style.display = 'none';
+    } else {
+        mySidebar.style.display = 'block';
+    }
+}
+
+// Close the sidebar with the close button
+function w3_close() {
+    mySidebar.style.display = "none";
+}
+
+</script>
+<!--
+To use this code on your website, get a free API key from Google.
+Read more at: https://www.w3schools.com/graphics/google_maps_basic.asp
+-->
+
+</body>
+</html>
