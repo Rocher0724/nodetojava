@@ -35,6 +35,9 @@ connection.connect(function(err) {
     }
 });
 */
+
+var room_info;
+
 var options = {
     key: fs.readFileSync('key.pem'),
     cert: fs.readFileSync('cert.pem')
@@ -76,15 +79,15 @@ const upload=multer({
 });
 
 app.get('/a',function(req,res){
-    res.sendfile(path.join(__dirname + '/audio-master.html'));
+    res.sendFile(path.join(__dirname + '/audio-master.html'));
 });
 
 app.get('/h',function(req,res){
-    res.sendfile(path.join(__dirname + '/HL-master.html'));
+    res.sendFile(path.join(__dirname + '/HL-master.html'));
 });
 
 app.get('/c',function(req,res){
-    res.sendfile(path.join(__dirname + '/collabo.html'));
+    res.sendFile(path.join(__dirname + '/collabo.html'));
 });
 
 //const upload = multer({ dest: 'uploads/', limits: { fileSize: 5 * 1024 * 1024 } });
@@ -196,6 +199,7 @@ io.sockets.on("connection", function(socket){
 
     socket.on('request', function(room) {
         socket.broadcast.emit("getRequest", room);
+        room_info = room;
     });
 
     socket.on('response', function(room, isGrant) {
@@ -206,12 +210,14 @@ io.sockets.on("connection", function(socket){
             // TODO 거절 했을 때 서버 side
         }
     });
-    socket.on("onCollabo", function () {
-        socket.emit("collabo", room);
-    });
 
     socket.on('enter', function (room, id) {
-        console.log("enter");
+        socket.emit("collabo", room);
+        console.log("enter: " + room);
+    });
+
+    socket.on("onCollabo", function(id) {
+        socket.emit("collabo", room_info);
     });
 });
 
@@ -268,9 +274,3 @@ udpServer4.on('message', function(msg, remote) {
 });
 udpServer4.bind(udpPort4, udpHost);
 */
-
-/*------------------합동방송-----------------------------*/
-
-
-
-/*------------------------------------------------------*/
