@@ -9,11 +9,8 @@ var localStream;
 var pc;
 var remoteStream;
 var turnReady;
-var room;
 
-var right_video = document.getElementById('right_video');
 var remoteVideo = document.getElementById('right_cam');
-var left_video = document.getElementById('left_video');
 var localVideo = document.getElementById('left_cam');
 
 var pcConfig = {
@@ -39,8 +36,6 @@ remoteVideo.addEventListener('resize', () => {
     console.log(`Remote video size changed to ${remoteVideo.videoWidth}x${remoteVideo.videoHeight}`);
 });
 
-
-let startTime;
 
 
 socket.on('connect', function () {

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat</title>
+    <style type="text/css">
+        #chat_log {
+            width: 80%;
+            height: 200px;
+        }
+
+        #chat {
+            width: 80%;
+        }
+
+        #name {
+            margin-right: 5px;
+            width: 10%;
+            float:left
+        }
+
+        #message {
+            margin-right: 5px;
+            width: 75%;
+            float:left;
+        }
+
+        #input {
+            margin-right: 5px;
+            width: 10%;
+            float:left;
+        }
+
+    </style>
+</head>
+<body>
+    <div>
+        <textarea id="chat_log" readonly></textarea>
+    </div>
+    <div id="chat">
+        <input id="name" type="text" readonly>
+        <input id="message" type="text">
+        <input id="input" type="button" value="chat" onclick="chat()"/>
+    </div>
+</body>
+<script type="text/javascript">
+    var id = prompt("닉네임를 입력하세요.");
+
+    document.getElementById("name").value = id;
+
+    function chat() {
+            var msg = document.getElementById("message").value;
+
+            if (msg != null) {
+                var str = id + ": " + msg;
+                document.getElementById('chat_log').append(str + "\n");
+                document.getElementById('message').value = ""
+            }
+    }
+
+
+</script>
+</html>

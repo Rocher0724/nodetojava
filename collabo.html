@@ -7,12 +7,12 @@
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-<!--<link rel="stylesheet" type="text/css" href="../../valiant360/css/valiant360.css"/>-->
+<link rel="stylesheet" type="text/css" href="../../valiant360/css/valiant360.css"/>
 <script src="../../socket.io/socket.io.js"></script>
 <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
 <!--<script src="../chatData.js"></script>-->
-<!--<script type="text/javascript" src="../../valiant360/js/three.min.js"></script>-->
-<!--<script type="text/javascript" src="../../valiant360/jquery.valiant360.js"></script>-->
+<script type="text/javascript" src="../../valiant360/js/three.min.js"></script>
+<script type="text/javascript" src="../../valiant360/jquery.valiant360.js"></script>
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 <style>
     body, h1, h2, h3, h4, h5, h6 {
@@ -84,12 +84,10 @@
     <div class="w3-row-padding" style="margin-top:64px">
 
         <div class="w3-half">
-            <video playsinline id="left_video" width="672" height="377" controls preload="metadata" autoplay></video>
             <video playsinline id="left_cam" controls preload="metadata" autoplay></video>
         </div>
 
         <div class="w3-half">
-            <video playsinline id="right_video" width="672" height="377" controls preload="metadata" autoplay></video>
             <video playsinline id="right_cam" controls preload="metadata" autoplay></video>
             <!--style="width: 100%; max-width:720px; height:377px;">-->
 
@@ -136,19 +134,18 @@
             var localStream;
             var pc;
             var remoteStream;
-            var turnReady;
-            var room;
 
-            var right_video = document.getElementById('right_video');
             var remoteVideo = document.getElementById('right_cam');
-            var left_video = document.getElementById('left_video');
             var localVideo = document.getElementById('left_cam');
 
             var pcConfig = {
                 'iceServers': [{
-                    'urls': 'stun:stun.l.google.com:19302'
-                }]
-            };
+                    urls: 'stun:stun.l.google.com:19302'
+                },
+                {urls: "turn:numb.viagenie.ca",
+                credential: "muazkh",
+                username: "webrtc@live.com"}
+                ]};
 
             var sdpConstraints = {
                 offerToReceiveAudio: true,
@@ -167,10 +164,6 @@
                 console.log(`Remote video size changed to ${remoteVideo.videoWidth}x${remoteVideo.videoHeight}`);
             });
 
-
-            let startTime;
-
-
             socket.on('connect', function () {
                 socket.emit("onCollabo", socket.id);
             });
@@ -181,27 +174,27 @@
             });
 
 
-            socket.on('created', function(room) {
+            socket.on('created', function (room) {
                 console.log('Created room ' + room);
                 isInitiator = true;
             });
 
-            socket.on('full', function(room) {
+            socket.on('full', function (room) {
                 console.log('Room ' + room + ' is full');
             });
 
-            socket.on('join', function (room){
+            socket.on('join', function (room) {
                 console.log('Another peer made a request to join room ' + room);
                 console.log('This peer is the initiator of room ' + room + '!');
                 isChannelReady = true;
             });
 
-            socket.on('joined', function(room) {
+            socket.on('joined', function (room) {
                 console.log('joined: ' + room);
                 isChannelReady = true;
             });
 
-            socket.on('log', function(array) {
+            socket.on('log', function (array) {
                 console.log.apply(console, array);
             });
 
@@ -211,7 +204,7 @@
             }
 
             // This client receives a message
-            socket.on('message', function(message) {
+            socket.on('message', function (message) {
                 console.log('Client received message:', message);
                 if (message === 'got user media') {
                     maybeStart();
@@ -239,7 +232,7 @@
                 video: true
             })
                 .then(gotStream)
-                .catch(function(e) {
+                .catch(function (e) {
                     alert('getUserMedia() error: ' + e.name);
                 });
 
@@ -279,7 +272,7 @@
                 }
             }
 
-            window.onbeforeunload = function() {
+            window.onbeforeunload = function () {
                 sendMessage('bye');
             };
 
@@ -287,7 +280,7 @@
 
             function createPeerConnection() {
                 try {
-                    pc = new RTCPeerConnection(null);
+                    pc = new RTCPeerConnection(pcConfig);
                     pc.onicecandidate = handleIceCandidate;
                     pc.onaddstream = handleRemoteStreamAdded;
                     pc.onremovestream = handleRemoteStreamRemoved;
@@ -340,38 +333,42 @@
                 trace('Failed to create session description: ' + error.toString());
             }
 
+            /*turn 서버 요청 CORS 문제 발생*/
             function requestTurn(turnURL) {
-                var turnExists = false;
-                for (var i in pcConfig.iceServers) {
-                    if (pcConfig.iceServers[i].urls.substr(0, 5) === 'turn:') {
-                        turnExists = true;
-                        turnReady = true;
-                        break;
-                    }
-                }
+                var turnExists = true;
+                // for (var i in pcConfig.iceServers) {
+                //     if (pcConfig.iceServers[i].urls.substr(0, 5) === 'stun:') {
+                //         turnExists = true;
+                //         turnReady = true;
+                //         console.log("Exist stun server");
+                //         break;
+                //     }
+                // }
                 if (!turnExists) {
-                    console.log('Getting TURN server from ', turnURL);
-                    // No TURN server. Get one from computeengineondemand.appspot.com:
-                    var xhr = new XMLHttpRequest();
-                    xhr.onreadystatechange = function() {
-                        if (xhr.readyState === 4 && xhr.status === 200) {
-                            var turnServer = JSON.parse(xhr.responseText);
-                            console.log('Got TURN server: ', turnServer);
-                            pcConfig.iceServers.push({
-                                'urls': 'turn:' + turnServer.username + '@' + turnServer.turn,
-                                'credential': turnServer.password
-                            });
-                            turnReady = true;
-                        }
-                    };
-                    xhr.open('GET', turnURL, true);
-                    xhr.send();
+                    // console.log('Getting TURN server from ', turnURL);
+                    // // No TURN server. Get one from computeengineondemand.appspot.com:
+                    // var xhr = new XMLHttpRequest();
+                    // xhr.onreadystatechange = function() {
+                    //     if (xhr.readyState === 4 && xhr.status === 200) {
+                    //         var turnServer = JSON.parse(xhr.responseText);
+                    //         console.log('Got TURN server: ', turnServer);
+                    //         pcConfig.iceServers.push({
+                    //             'urls': 'turn:' + turnServer.username + '@' + turnServer.turn,
+                    //             'credential': turnServer.password
+                    //         });
+                    //         turnReady = true;
+                    //     }
+                    // };
+                    //
+                    // xhr.open('GET', turnURL, true);
+                    // xhr.send();
                 }
             }
 
             function handleRemoteStreamAdded(event) {
                 console.log('Remote stream added.');
                 remoteStream = event.stream;
+                console.log(event);
                 remoteVideo.srcObject = remoteStream;
             }
 
@@ -420,30 +417,29 @@
         <script>
             var chatCount = 0
             var appendedIndex = 0;
-            // setInterval(function () {
-            //     if (chatCount <= Object.keys(chatData).length) {
-            //         while (chatData[chatCount + appendedIndex][0].chattime === chatCount) {
-            //             $("#msgs").append(chatData[chatCount + appendedIndex][0].user + ": " + chatData[chatCount + appendedIndex][0].comment + "<br/>")
-            //             console.log(chatData[chatCount + appendedIndex][0])
-            //             appendedIndex++;
-            //         }
-            //         chatCount++;
-            //         $("#msgs").scrollTop($("#msgs")[0].scrollHeight + 20);
-            //     }
-            // }, 1000);
+            setInterval(function () {
+                if (chatCount <= Object.keys(chatData).length) {
+                    while (chatData[chatCount + appendedIndex][0].chattime === chatCount) {
+                        $("#msgs").append(chatData[chatCount + appendedIndex][0].user + ": " + chatData[chatCount + appendedIndex][0].comment + "<br/>")
+                        console.log(chatData[chatCount + appendedIndex][0])
+                        appendedIndex++;
+                    }
+                    chatCount++;
+                    $("#msgs").scrollTop($("#msgs")[0].scrollHeight + 20);
+                }
+            }, 1000);
 
-            // width height..?
-            // $(document).ready(function () {
-            //     $('.valiantPhoto').Valiant360();
-            //     $(window).resize(function () {
-            //         $("#right_video").height($("#left_video").height());
-            //         $("#right_video canvas").height($("#left_video").height());
-            //     })
-            //     setTimeout(function () {
-            //         $("#right_video").height($("#left_video").height());
-            //         $("#right_video canvas").height($("#left_video").height());
-            //     }, 300)
-            // });
+            $(document).ready(function () {
+                $('.valiantPhoto').Valiant360();
+                $(window).resize(function () {
+                    $("#right_video").height($("#left_video").height());
+                    $("#right_video canvas").height($("#left_video").height());
+                })
+                setTimeout(function () {
+                    $("#right_video").height($("#left_video").height());
+                    $("#right_video canvas").height($("#left_video").height());
+                }, 300)
+            });
         </script>
     </div>
 </div>

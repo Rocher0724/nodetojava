@@ -163,7 +163,7 @@ body, html {
         });
 
         socket.on("getRequest", function(room) {
-            if(confirm("합동 방송 요청이 들어왔습니다. 수락 하시겠습니다?")) {
+            if(confirm("화상 채팅 요청이 들어왔습니다. 수락 하시겠습니다?")) {
                 socket.emit("response", room, true);
                 socket.emit("enter", room, socket.id);
                 location.href = "/c";
